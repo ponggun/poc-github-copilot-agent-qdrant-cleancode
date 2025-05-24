@@ -1,0 +1,6 @@
+@PocGithubCopilotAgentQdrantCleancode.Presentation.WebApi_HostAddress = http://localhost:5030
+
+GET {{PocGithubCopilotAgentQdrantCleancode.Presentation.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
