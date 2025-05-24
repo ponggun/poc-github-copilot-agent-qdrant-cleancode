@@ -3,11 +3,15 @@ using PocGithubCopilotAgentQdrantCleancode.Application.Interfaces;
 using PocGithubCopilotAgentQdrantCleancode.Application.Services;
 using PocGithubCopilotAgentQdrantCleancode.Infrastructure.Repositories;
 using PocGithubCopilotAgentQdrantCleancode.Infrastructure.Services;
+using PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Configure HttpClient for API communication
+builder.Services.AddHttpClient<DocumentApiClient>();
 
 // Register application services
 builder.Services.AddScoped<IEmbeddingService, OpenAIEmbeddingService>();

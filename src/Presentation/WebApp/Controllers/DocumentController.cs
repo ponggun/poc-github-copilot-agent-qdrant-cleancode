@@ -1,22 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
-using PocGithubCopilotAgentQdrantCleancode.Application.Interfaces;
 using PocGithubCopilotAgentQdrantCleancode.Domain.Entities;
 using PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Models;
+using PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Services;
 
 namespace PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Controllers
 {
     public class DocumentController : Controller
     {
-        private readonly IDocumentService _documentService;
+        private readonly DocumentApiClient _documentApiClient;
 
-        public DocumentController(IDocumentService documentService)
+        public DocumentController(DocumentApiClient documentApiClient)
         {
-            _documentService = documentService ?? throw new ArgumentNullException(nameof(documentService));
+            _documentApiClient = documentApiClient ?? throw new ArgumentNullException(nameof(documentApiClient));
         }
 
         public async Task<IActionResult> Index()
         {
-            var documents = await _documentService.GetAllDocumentsAsync();
+            var documents = await _documentApiClient.GetAllDocumentsAsync();
             return View(documents);
         }
 
@@ -27,11 +27,21 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Document document)
+        public async Task<IActionResult> Create(Document document, string[] MetadataKeys, string[] MetadataValues)
         {
             if (ModelState.IsValid)
             {
-                await _documentService.CreateDocumentAsync(document);
+                // Process metadata from form
+                document.Metadata = new Dictionary<string, string>();
+                for (int i = 0; i < MetadataKeys.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(MetadataKeys[i]) && i < MetadataValues.Length)
+                    {
+                        document.Metadata[MetadataKeys[i]] = MetadataValues[i];
+                    }
+                }
+                
+                await _documentApiClient.CreateDocumentAsync(document);
                 return RedirectToAction(nameof(Index));
             }
             return View(document);
@@ -44,7 +54,7 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Controllers
                 return NotFound();
             }
 
-            var document = await _documentService.GetDocumentByIdAsync(id);
+            var document = await _documentApiClient.GetDocumentByIdAsync(id);
             if (document == null)
             {
                 return NotFound();
@@ -55,7 +65,7 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(string id, Document document)
+        public async Task<IActionResult> Edit(string id, Document document, string[] MetadataKeys, string[] MetadataValues)
         {
             if (id != document.Id)
             {
@@ -64,7 +74,17 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                await _documentService.UpdateDocumentAsync(document);
+                // Process metadata from form
+                document.Metadata = new Dictionary<string, string>();
+                for (int i = 0; i < MetadataKeys.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(MetadataKeys[i]) && i < MetadataValues.Length)
+                    {
+                        document.Metadata[MetadataKeys[i]] = MetadataValues[i];
+                    }
+                }
+                
+                await _documentApiClient.UpdateDocumentAsync(document);
                 return RedirectToAction(nameof(Index));
             }
             return View(document);
@@ -77,7 +97,7 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Controllers
                 return NotFound();
             }
 
-            var document = await _documentService.GetDocumentByIdAsync(id);
+            var document = await _documentApiClient.GetDocumentByIdAsync(id);
             if (document == null)
             {
                 return NotFound();
@@ -90,7 +110,7 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string id)
         {
-            await _documentService.DeleteDocumentAsync(id);
+            await _documentApiClient.DeleteDocumentAsync(id);
             return RedirectToAction(nameof(Index));
         }
 
@@ -101,7 +121,7 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.WebApp.Controllers
                 return View(new List<Document>());
             }
 
-            var results = await _documentService.SearchSimilarDocumentsAsync(query);
+            var results = await _documentApiClient.SearchSimilarDocumentsAsync(query);
             return View(results);
         }
     }
