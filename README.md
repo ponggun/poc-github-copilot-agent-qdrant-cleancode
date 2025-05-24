@@ -1,0 +1,1 @@
+# poc-github-copilot-agent-qdrant-cleancode
