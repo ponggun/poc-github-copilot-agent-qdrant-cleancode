@@ -2,6 +2,9 @@
 
 This project demonstrates the implementation of a semantic search application using Qdrant vector database with Clean Architecture principles.
 
+- [Blog](https://medium.com/t-t-software-solution/github-copilot-coding-agent-public-preview-b686b39ce457)
+- [Video](https://www.youtube.com/watch?v=GbG_LA1Mlag)
+
 ## Clean Architecture Structure
 
 The project is organized into four main layers according to Clean Architecture:
