@@ -39,6 +39,47 @@ The dependencies between layers flow inward according to Clean Architecture:
 
 This ensures the core domain remains independent of external frameworks and technologies.
 
+```mermaid
+flowchart TD
+    subgraph Domain
+        D1[Entities]
+        D2[Interfaces]
+    end
+
+    subgraph Application
+        A1[Services]
+        A2[Interfaces]
+    end
+
+    subgraph Infrastructure
+        I1[Repositories]
+        I2[Services]
+    end
+
+    subgraph Presentation
+        P1[WebApi]
+        P2[WebApp]
+        P3[Evaluator]
+    end
+
+    %% Dependency arrows
+    P1 --> A1
+    P2 --> A1
+    P3 --> A1
+    A1 --> D1
+    A1 --> D2
+    A2 --> D2
+    I1 --> D2
+    I2 --> A2
+    I1 --> A2
+    I2 --> D2
+
+    %% Group dependencies
+    Infrastructure --> Application
+    Application --> Domain
+    Presentation --> Application
+```
+
 ## Getting Started
 
 1. Ensure you have .NET 8.0 SDK installed
