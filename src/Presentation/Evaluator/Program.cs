@@ -5,6 +5,8 @@ using PocGithubCopilotAgentQdrantCleancode.Domain.Entities;
 using PocGithubCopilotAgentQdrantCleancode.Domain.Interfaces;
 using PocGithubCopilotAgentQdrantCleancode.Infrastructure.Repositories;
 using PocGithubCopilotAgentQdrantCleancode.Infrastructure.Services;
+using Serilog;
+using System.IO;
 
 namespace PocGithubCopilotAgentQdrantCleancode.Presentation.Evaluator
 {
@@ -12,6 +14,18 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.Evaluator
     {
         public static async Task Main(string[] args)
         {
+            // Setup Serilog
+            string logDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Logs", DateTime.Now.ToString("yyyyMMddHHmm"));
+            Directory.CreateDirectory(logDirectory);
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.Console()
+                .WriteTo.File(Path.Combine(logDirectory, "log.txt"), rollingInterval: RollingInterval.Hour)
+                .CreateLogger();
+
+            Log.Information("Starting Qdrant Document Evaluator");
+
             // Setup dependency injection
             var serviceProvider = new ServiceCollection()
                 .AddScoped<IEmbeddingService, OpenAIEmbeddingService>()
@@ -20,6 +34,8 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.Evaluator
                 .BuildServiceProvider();
 
             var documentService = serviceProvider.GetRequiredService<IDocumentService>();
+
+            Log.Information("Qdrant Document Evaluator initialized");
 
             Console.WriteLine("Qdrant Document Evaluator");
             Console.WriteLine("=======================");
@@ -49,52 +65,64 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.Evaluator
                         break;
                     case "4":
                         exit = true;
+                        Log.Information("User requested to exit the application");
                         break;
                     default:
+                        Log.Warning("Invalid option selected: {Choice}", choice);
                         Console.WriteLine("Invalid option, please try again.");
                         break;
                 }
             }
 
             Console.WriteLine("Thank you for using the Qdrant Document Evaluator!");
+            Log.Information("Shutting down Qdrant Document Evaluator");
+            Log.CloseAndFlush();
         }
 
         private static async Task AddDocumentAsync(IDocumentService documentService)
         {
+            Log.Debug("Entering AddDocumentAsync method");
             Console.WriteLine("\nAdd a new document");
             Console.Write("Document ID (or leave empty for auto-generated): ");
             var id = Console.ReadLine();
             if (string.IsNullOrEmpty(id))
             {
                 id = Guid.NewGuid().ToString();
+                Log.Debug("Auto-generated document ID: {Id}", id);
             }
 
             Console.Write("Document content: ");
             var content = Console.ReadLine() ?? string.Empty;
 
             var document = new Document(id, content);
+            Log.Information("Attempting to add document with ID: {Id}", id);
             var result = await documentService.CreateDocumentAsync(document);
             
             if (result)
             {
+                Log.Information("Document added successfully with ID: {Id}", id);
                 Console.WriteLine($"Document added successfully with ID: {id}");
             }
             else
             {
+                Log.Warning("Failed to add document with ID: {Id}", id);
                 Console.WriteLine("Failed to add document.");
             }
         }
 
         private static async Task SearchDocumentsAsync(IDocumentService documentService)
         {
+            Log.Debug("Entering SearchDocumentsAsync method");
             Console.WriteLine("\nSearch for documents");
             Console.Write("Enter search query: ");
             var query = Console.ReadLine() ?? string.Empty;
+            Log.Information("Searching documents with query: {Query}", query);
 
             try
             {
                 var results = await documentService.SearchSimilarDocumentsAsync(query);
                 
+                Log.Information("Search completed. Found {Count} results", results.Count());
                 Console.WriteLine($"\nFound {results.Count()} results:");
                 
                 foreach (var doc in results)
@@ -104,24 +132,42 @@ namespace PocGithubCopilotAgentQdrantCleancode.Presentation.Evaluator
             }
             catch (NotImplementedException)
             {
+                Log.Warning("Search functionality is not yet implemented");
                 Console.WriteLine("Search functionality is not yet implemented.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error occurred during document search");
+                Console.WriteLine("An error occurred during search.");
             }
         }
 
         private static async Task ListAllDocumentsAsync(IDocumentService documentService)
         {
+            Log.Debug("Entering ListAllDocumentsAsync method");
             Console.WriteLine("\nListing all documents");
             
-            var documents = await documentService.GetAllDocumentsAsync();
-            if (!documents.Any())
+            try
             {
-                Console.WriteLine("No documents found.");
-                return;
+                var documents = await documentService.GetAllDocumentsAsync();
+                Log.Information("Retrieved {Count} documents", documents.Count());
+                
+                if (!documents.Any())
+                {
+                    Log.Information("No documents found in repository");
+                    Console.WriteLine("No documents found.");
+                    return;
+                }
+                
+                foreach (var doc in documents)
+                {
+                    Console.WriteLine($"ID: {doc.Id}, Content: {doc.Content}");
+                }
             }
-            
-            foreach (var doc in documents)
+            catch (Exception ex)
             {
-                Console.WriteLine($"ID: {doc.Id}, Content: {doc.Content}");
+                Log.Error(ex, "Error occurred while listing documents");
+                Console.WriteLine("An error occurred while retrieving documents.");
             }
         }
     }
