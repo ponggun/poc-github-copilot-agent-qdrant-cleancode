@@ -85,6 +85,20 @@ flowchart TD
 
 ## Getting Started
 
+### Option 1: Using Docker Compose (Recommended)
+
+1. Ensure you have Docker and Docker Compose installed
+2. Clone the repository
+3. Start all services: `docker compose up -d`
+4. Access the applications:
+   - Web API: http://localhost:5030
+   - Web App: http://localhost:5032
+   - Qdrant Dashboard: http://localhost:6333/dashboard
+
+For detailed Docker setup instructions, see [DOCKER.md](DOCKER.md).
+
+### Option 2: Local Development
+
 1. Ensure you have .NET 8.0 SDK installed
 2. Clone the repository
 3. Build the solution: `dotnet build`

@@ -49,6 +49,9 @@ try
 
     app.MapControllers();
 
+    // Add health check endpoint for Docker
+    app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
     app.Run();
 }
 catch (Exception ex)
