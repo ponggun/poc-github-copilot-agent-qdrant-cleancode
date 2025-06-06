@@ -1,0 +1,56 @@
+services:
+  # Production overrides - using cloud Qdrant
+  
+  # Web API Service for Production
+  webapi:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Serilog__MinimumLevel__Default=Information
+      - Qdrant__Host=${QDRANT_CLOUD_HOST}
+      - Qdrant__Port=${QDRANT_CLOUD_PORT:-443}
+      - Qdrant__ApiKey=${QDRANT_CLOUD_API_KEY}
+      - Qdrant__UseHttps=true
+      - OpenAI__ApiKey=${OPENAI_API_KEY}
+    ports:
+      - "80:8080"
+    restart: always
+
+  # Web App Service for Production
+  webapp:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Serilog__MinimumLevel__Default=Information
+      - ApiBaseUrl=${WEBAPI_URL:-http://webapi:8080/}
+      - Qdrant__Host=${QDRANT_CLOUD_HOST}
+      - Qdrant__Port=${QDRANT_CLOUD_PORT:-443}
+      - Qdrant__ApiKey=${QDRANT_CLOUD_API_KEY}
+      - Qdrant__UseHttps=true
+    ports:
+      - "8080:8080"
+    restart: always
+
+  # Evaluator for Production (optional)
+  evaluator:
+    build:
+      context: .
+      dockerfile: src/Presentation/Evaluator/Dockerfile
+    container_name: qdrant-evaluator-prod
+    environment:
+      - DOTNET_ENVIRONMENT=Production
+      - Qdrant__Host=${QDRANT_CLOUD_HOST}
+      - Qdrant__Port=${QDRANT_CLOUD_PORT:-443}
+      - Qdrant__ApiKey=${QDRANT_CLOUD_API_KEY}
+      - Qdrant__UseHttps=true
+      - OpenAI__ApiKey=${OPENAI_API_KEY}
+    depends_on:
+      webapi:
+        condition: service_healthy
+    networks:
+      - qdrant-network
+    profiles:
+      - evaluator
+    restart: "no"  # Run once for evaluation then stop
+
+# Remove qdrant service for cloud deployment - it's external
+volumes:
+  # Remove qdrant_data volume for cloud deployment

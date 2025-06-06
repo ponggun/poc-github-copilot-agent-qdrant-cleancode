@@ -1,0 +1,51 @@
+services:
+  # Development overrides for Qdrant
+  qdrant:
+    environment:
+      - QDRANT__LOG_LEVEL=DEBUG
+    volumes:
+      - ./qdrant-config:/qdrant/config
+
+  # Development overrides for Web API
+  webapi:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Serilog__MinimumLevel__Default=Debug
+      - OpenAI__ApiKey=${OPENAI_API_KEY:-your_openai_api_key_here}
+    volumes:
+      - ./src/Presentation/WebApi/appsettings.Development.json:/app/appsettings.Development.json:ro
+    ports:
+      - "5030:8080"
+      - "5031:8081"  # Additional port for debugging
+
+  # Development overrides for Web App
+  webapp:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Serilog__MinimumLevel__Default=Debug
+      - ApiBaseUrl=http://localhost:5030/
+    volumes:
+      - ./src/Presentation/WebApp/appsettings.Development.json:/app/appsettings.Development.json:ro
+    ports:
+      - "5032:8080"
+
+  # Evaluator service for development and testing
+  evaluator:
+    build:
+      context: .
+      dockerfile: src/Presentation/Evaluator/Dockerfile
+    container_name: qdrant-evaluator
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - Qdrant__Host=qdrant
+      - Qdrant__Port=6333
+      - OpenAI__ApiKey=${OPENAI_API_KEY:-your_openai_api_key_here}
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      webapi:
+        condition: service_healthy
+    networks:
+      - qdrant-network
+    profiles:
+      - evaluator  # Only start when specifically requested
